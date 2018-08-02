@@ -6,6 +6,7 @@ from scipy import stats
 
 if __name__ == "__main__":
 	filename = "data/2018-07-19_09.42/"
+	filename = "data/2018-07-27_16.40/"
 	dfx = pd.read_csv(filename + "x.csv", header=None)
 	dff = pd.read_csv(filename+ "fitness.csv")
 	dfff = dff.values.flatten()
@@ -17,9 +18,9 @@ if __name__ == "__main__":
 				transIndex = (index*100)+i
 				dropIndexs.append(transIndex)
 
-    			# print val, i, index
-    			# print dfff[transIndex]
-    			# print dfx.iloc[transIndex]
+				# print val, i, index
+				# print dfff[transIndex]
+				# print dfx.iloc[transIndex]
 
 	# print dropIndexs
 	dfxNew = dfx.drop(dropIndexs)
