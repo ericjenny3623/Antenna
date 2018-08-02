@@ -1,0 +1,11 @@
+N = 10
+Nff = 100
+Alpha = 1.0/80
+Gamma = 10.0
+T = 100
+k = 5 #x pi
+Nphi = 128
+Pwdes = 28 # degrees, will be converted to radians
+Slhdes = -24
+ENSEMBLES = 1000
+
