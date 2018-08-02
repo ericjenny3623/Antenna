@@ -3,29 +3,40 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pandas.tools import plotting
 from scipy import stats
+from functions import ResponseModel
+import functions
+
 
 if __name__ == "__main__":
+	model = ResponseModel()
+
 	filename = "data/2018-07-19_09.42/"
-	filename = "data/2018-07-27_16.40/"
-	dfx = pd.read_csv(filename + "x.csv", header=None)
-	dff = pd.read_csv(filename+ "fitness.csv")
+	# filename = "data/2018-07-27_16.40/"
+	dfx = pd.read_csv(filename + "xNew.csv", header=None)
+	dff = pd.read_csv(filename+ "fNew.csv", header=None)
+
 	dfff = dff.values.flatten()
 	dropIndexs = []
+	fig = plt.figure()
+	count = 0
 
-	for index, row in dff.iterrows():
-		for i, val in enumerate(row):
-			if val > 0.005:
-				transIndex = (index*100)+i
-				dropIndexs.append(transIndex)
+	for i, val in enumerate(dfff):
+		antenna = dfx.iloc[i]
+		antenna = antenna.as_matrix()
+		response = model.angleSpectrum(antenna)
+		fitness = model.calculateFitness(functions.convertDb(response))
+		if fitness > 0.01:
+			dropIndexs.append(i)
+			count += 1
+			# plt.plot(functions.convertDb(response))
+			# plt.show()
+			# print antenna
 
-				# print val, i, index
-				# print dfff[transIndex]
-				# print dfx.iloc[transIndex]
+	print count
 
-	# print dropIndexs
-	dfxNew = dfx.drop(dropIndexs)
-	# print dfxNew
-	dfxNew.to_csv(filename + "xNew.csv", index=False)
+	# print dropIndexs, len(dropIndexs)
+	dfx = dfx.drop(dropIndexs)
+	dfx.to_csv(filename + "xNew.csv", index=False)
+
 	dffNew = np.delete(dfff, dropIndexs)
-	# print dffNew
 	np.savetxt(filename + "fNew.csv", dffNew)

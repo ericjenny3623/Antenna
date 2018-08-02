@@ -10,57 +10,57 @@ if __name__ == "__main__":
 
     filename = "data/2018-07-12_14.51/"
     filename = "data/2018-07-19_09.42/"
-    filename = "data/2018-07-27_16.40/"
-    dfx = pd.read_csv(filename + "x.csv", header=None)
+    # filename = "data/2018-07-27_16.40/"
+    dfx = pd.read_csv(filename + "xNew.csv", header=None)
 
     dif = dfx.diff(axis=1)
     dif[10] = 1 - dfx[9]
     num = len(dif.columns)
     print num
     print dif
-    
+
     slope = np.empty(num-2)
     intercept = np.empty(num-2)
     r_value = np.empty(num-2)
     p_value = np.empty(num-2)
     std_err = np.empty(num-2)
-    
+
     for i in range (1, num-1):
         y = dif[i]
         x = dif[i+1]
         slope[i-1], intercept[i-1], r_value[i-1], p_value[i-1], std_err[i-1] = stats.linregress(x, y)
-    
+
     # plotting.scatter_matrix(dfx, alpha=0.2, figsize=(6, 6))
     # plt.show()
-    
+
     count, bins = np.histogram(dfx, bins=128, range=[0, 1], density=True)
     cdf = np.cumsum(count)/128
     plt.plot(bins[:-1],cdf)
     plt.show()
-    
+
     dfx.hist(color='aqua', alpha=0.5, bins=50)
     plt.title("Positions Histogram")
     plt.xlim(0.0,1.0)
     plt.show()
-    
+
     print dfx.quantile([0.25, 0.5, 0.75])
     #
     dfx.boxplot()
     plt.show()
-    
+
     cor = dfx.corr()
     print cor
     plt.matshow(cor)
     plt.show()
-    
+
     dif = dfx.diff(axis=1)
     dif.drop(dif.columns[0],axis=1,inplace=True)
     # print dif
-    
+
     dif.hist(color='aqua', alpha=0.5, bins=50)
     # plt.title("Separation Histogram")
     plt.show()
-    
+
     difcor = dif.corr()
     print difcor
     plt.matshow(difcor)
@@ -117,5 +117,5 @@ if __name__ == "__main__":
             # plt.show()
             plt.close()
             # cb.set_label('Counts')
-    
+
     plt.show()
