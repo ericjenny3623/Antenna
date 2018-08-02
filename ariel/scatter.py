@@ -12,6 +12,7 @@ if __name__ == "__main__":
     filename = "data/2018-07-19_09.42/"
     # filename = "data/2018-07-27_16.40/"
     dfx = pd.read_csv(filename + "xNew.csv", header=None)
+    print dfx
 
     dif = dfx.diff(axis=1)
     dif[10] = 1 - dfx[9]

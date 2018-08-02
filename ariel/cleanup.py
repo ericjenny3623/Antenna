@@ -12,8 +12,8 @@ if __name__ == "__main__":
 
 	filename = "data/2018-07-19_09.42/"
 	# filename = "data/2018-07-27_16.40/"
-	dfx = pd.read_csv(filename + "xNew.csv", header=None)
-	dff = pd.read_csv(filename+ "fNew.csv", header=None)
+	dfx = pd.read_csv(filename + "x.csv", header=None)
+	dff = pd.read_csv(filename+ "fitness.csv", header=None)
 
 	dfff = dff.values.flatten()
 	dropIndexs = []
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
 	# print dropIndexs, len(dropIndexs)
 	dfx = dfx.drop(dropIndexs)
-	dfx.to_csv(filename + "xNew.csv", index=False)
+	dfx.to_csv(filename + "xNew.csv", index=False, header=False)
 
 	dffNew = np.delete(dfff, dropIndexs)
 	np.savetxt(filename + "fNew.csv", dffNew)
