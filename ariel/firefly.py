@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import functions
 from functions import ResponseModel
 import csv
+from constraint import ConstraintModel
 
 class Firefly:
 
@@ -13,6 +14,7 @@ class Firefly:
         self.Gamma = gamma
         self.T = t
         np.random.seed()
+        self.separation_model = ConstraintModel(0.1, self.N)
 
 
     def response_model(self, k=5*np.pi, n=10, angle_increment=128, peakWidth=28.0/180.0*np.pi, sidelobeHeight=-24):
@@ -25,6 +27,9 @@ class Firefly:
         self.fitnesses = [self.response_model.calculateFitness(functions.convertDb(self.responses[k])) for k in range (0, self.Nff)]
         self.average_fitnesses_over_time = [0 for l in range (0, self.T)]
         self.average_fitnesses_over_time[0] = np.mean(self.fitnesses)
+        self.separations = [self.separation_model.checkPositions(self.fireflies[i]) for i in range (0, self.Nff)]
+        print self.separations
+
 
     def calculate_convergence(self, xi=[], xt=[]):
         distance = functions.distance(self.N,xi,xt)
@@ -34,8 +39,9 @@ class Firefly:
     def total_convergence(self, index, fireflies, fitnesses):
         fitness = fitnesses[index]
         xi = fireflies[index]
+        good_separation_count = self.separations[index]
         for i in range (0, self.Nff):
-            if (fitnesses[i] < fitness and i != index):
+            if (fitnesses[i] < fitness and i != index and good_separation_count < self.separations[i]):
                 xi += self.calculate_convergence(xi, fireflies[i])
         return xi
 
@@ -78,6 +84,8 @@ class Firefly:
                 self.fireflies[i] = np.sort(self.fireflies[i])
                 self.responses[i] = self.response_model.angleSpectrum(self.fireflies[i])
                 self.fitnesses[i] = self.response_model.calculateFitness(functions.convertDb(self.responses[i]))
+                self.separations[i] = self.separation_model.checkPositions(self.fireflies[i])
+                print self.separations
 
             self.average_fitnesses_over_time[t] = np.mean(self.fitnesses)
 
@@ -100,15 +108,15 @@ class Firefly:
 
 
 if __name__ == '__main__':
-    firefly = Firefly(nff=100, t=100, n=10, alpha = 1.0/8.0)
+    firefly = Firefly()
     firefly.response_model()
     firefly.generate_initials()
     firefly.run()
     fig = plt.figure()
     plt.plot(firefly.average_fitnesses_over_time)
-    # plt.savefig("graphs/average_fitness_over_time/" + firefly.imagename)
+    # # plt.savefig("graphs/average_fitness_over_time/" + firefly.imagename)
     plt.show()
-    hist, edges = np.histogram(firefly.fireflies, bins=100)
-    plt.plot(edges[1:],hist)
-    # plt.savefig("graphs/final_positions_histogram/" + firefly.imagename)
-    plt.show()
+    # hist, edges = np.histogram(firefly.fireflies, bins=100)
+    # plt.plot(edges[1:],hist)
+    # # plt.savefig("graphs/final_positions_histogram/" + firefly.imagename)
+    # plt.show()
