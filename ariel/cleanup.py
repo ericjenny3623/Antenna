@@ -12,6 +12,8 @@ if __name__ == "__main__":
 
 	filename = "data/2018-07-19_09.42/"
 	# filename = "data/2018-07-27_16.40/"
+	filename = "data/2018-08-02_16.32/"
+
 	dfx = pd.read_csv(filename + "x.csv", header=None)
 	dff = pd.read_csv(filename+ "fitness.csv", header=None)
 
