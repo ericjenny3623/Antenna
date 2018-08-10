@@ -15,18 +15,25 @@ class ConstraintModel:
 		self.N = n
 		self.MIN_DISTANCE_ARRAY = self.MIN_DISTANCE*(np.ones(self.N))
 
-
-	def checkPositions(self, x):
+	def calculateSpacings(self, x):
 		xNew = np.concatenate(([-x[0]], x))
 		dif = np.diff(xNew)
+		return dif
+
+	def checkSpacings(self, dif):
 		greater = np.greater(dif, self.MIN_DISTANCE_ARRAY)
 		count = np.sum(greater)
 		weight = np.sum(dif*greater)
-		print dif, self.MIN_DISTANCE_ARRAY
-		return count, weight
+		# print dif
+		# print greater
+		return count#, weight
+
+
 
 if __name__ == "__main__":
-	model = ConstraintModel(4.0/5.0, 4)
-	print model.checkPositions(np.array([0.11,0.25,0.4,0.61]))
+	model = ConstraintModel(0.1, 10)
+	array = np.sort(np.random.rand(10))
+	print array
+	print model.checkPositions(np.array(array))
 
 
