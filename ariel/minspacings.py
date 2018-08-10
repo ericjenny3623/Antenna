@@ -14,10 +14,11 @@ class Firefly:
         self.Gamma = gamma
         self.T = t
         np.random.seed()
-        self.spacing_model = SpacingModel(0.1, self.N)
 
     def response_model(self, k=5*np.pi, n=10, angle_increment=128, peakWidth=28.0/180.0*np.pi, sidelobeHeight=-24):
         self.response_model = ResponseModel(k, n, angle_increment, peakWidth, sidelobeHeight)
+        self.spacing_model = SpacingModel((1.0 / k * np.pi / 2.0), self.N)
+
 
     def generate_initials(self):
         self.fireflies = [np.sort(np.random.rand(self.N)) for i in range (0, self.Nff)]
@@ -33,6 +34,13 @@ class Firefly:
         self.averagePositionsOverTime = np.array([np.empty(self.N) for i in range (0, self.T)])
         self.averagePositionsOverTime[0] = np.mean(self.fireflies, axis=0)
 
+    def generateFireflies(self):
+        top = self.spacing_model.MAX_CONSTRAINT
+        bottom = self.spacing_model.MIN_CONSTRAINT
+        scale = top-bottom
+        # print top, bottom, scale
+        self.fireflies = [np.fromfunction(lambda i: bottom+top*i, (self.N,)) + (scale*np.random.rand(self.N))for j in range (0, self.Nff)]
+        # print self.fireflies
 
     def calculate_convergence(self, xi=[], xt=[]):
         distance = functions.distance(self.N,xi,xt)
@@ -61,7 +69,7 @@ class Firefly:
                 movement = magnitude * np.random.rand(1)
         else:
             if magnitude > maxDown:
-                movement = maxDown * np.random.rand(1)
+                movement = maxDown * np.random.rand(1) * -1.0
             else:
                 movement = magnitude * np.random.rand(1) * -1.0
         return movement
@@ -131,9 +139,10 @@ if __name__ == '__main__':
     firefly = Firefly()
     firefly.response_model()
     firefly.generate_initials()
+    firefly.generateFireflies()
+
     firefly.run()
     fig = plt.figure()
-    print np.sum(firefly.separations[0])
 
     plt.plot(firefly.averageGoodSeparationOverTime, label='Good Spacings')
     plt.plot(firefly.averageFitnessOverTime, label='Fitness')
@@ -142,8 +151,9 @@ if __name__ == '__main__':
     plt.show()
 
     indexsY = [np.full(firefly.N, i) for i in range (0, firefly.Nff)]
-    plt.scatter(firefly.fireflies, indexsY, cmap='inferno')
+    plt.scatter(firefly.fireflies, indexsY, c='mediumspringgreen', edgecolors='mediumaquamarine')
     plt.show()
 
-    plt.scatter(firefly.averagePositionsOverTime, indexsY, cmap='inferno')
+    indexsY = [np.full(firefly.N, i) for i in range (0, firefly.T)]
+    plt.scatter(firefly.averagePositionsOverTime, indexsY, c='goldenrod', edgecolors='darkgoldenrod')
     plt.show()

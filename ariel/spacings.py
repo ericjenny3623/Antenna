@@ -14,6 +14,8 @@ class SpacingModel:
 		self.MIN_DISTANCE = min
 		self.N = n
 		self.MIN_DISTANCE_ARRAY = self.MIN_DISTANCE*(np.ones(self.N+1))
+		self.MIN_CONSTRAINT = self.MIN_DISTANCE/2.0
+		self.MAX_CONSTRAINT = 1.0/self.N
 
 	def calculateSpacings(self, x):
 		xNew = np.concatenate(([-x[0]], x, [1.0]))
