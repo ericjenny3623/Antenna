@@ -21,7 +21,8 @@ class Firefly:
 
 
     def generate_initials(self):
-        self.fireflies = [np.sort(np.random.rand(self.N)) for i in range (0, self.Nff)]
+        # self.fireflies = [np.sort(np.random.rand(self.N)) for i in range (0, self.Nff)]
+        self.generateFireflies()
         self.responses = [self.response_model.angleSpectrum(self.fireflies[j]) for j in range (0, self.Nff)]
         self.response_constraint = self.response_model.getRt()
         self.fitnesses = [self.response_model.calculateFitness(functions.convertDb(self.responses[k])) for k in range (0, self.Nff)]
@@ -117,7 +118,7 @@ class Firefly:
             self.averagePositionsOverTime[t] = np.mean(self.fireflies, axis=0)
 
 
-        return self.fireflies, self.responses, self.fitnesses
+        return self.fireflies, self.responses, self.fitnesses, self.averageGoodSeparationOverTime, self.averageFitnessOverTime, self.averagePositionsOverTime
 
     # time = datetime.__str__(datetime.today())
     # self.filename = "debug/debug_" + time + ".csv"
@@ -139,7 +140,6 @@ if __name__ == '__main__':
     firefly = Firefly()
     firefly.response_model()
     firefly.generate_initials()
-    firefly.generateFireflies()
 
     firefly.run()
     fig = plt.figure()
@@ -150,9 +150,9 @@ if __name__ == '__main__':
     plt.ylim(0,15)
     plt.show()
 
-    indexsY = [np.full(firefly.N, i) for i in range (0, firefly.Nff)]
-    plt.scatter(firefly.fireflies, indexsY, c='mediumspringgreen', edgecolors='mediumaquamarine')
-    plt.show()
+    # indexsY = [np.full(firefly.N, i) for i in range (0, firefly.Nff)]
+    # plt.scatter(firefly.fireflies, indexsY, c='mediumspringgreen', edgecolors='mediumaquamarine')
+    # plt.show()
 
     indexsY = [np.full(firefly.N, i) for i in range (0, firefly.T)]
     plt.scatter(firefly.averagePositionsOverTime, indexsY, c='goldenrod', edgecolors='darkgoldenrod')

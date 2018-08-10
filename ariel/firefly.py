@@ -14,7 +14,6 @@ class Firefly:
         self.Gamma = gamma
         self.T = t
         np.random.seed()
-        self.separation_model = ConstraintModel(0.1, self.N)
 
 
     def response_model(self, k=5*np.pi, n=10, angle_increment=128, peakWidth=28.0/180.0*np.pi, sidelobeHeight=-24):

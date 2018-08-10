@@ -9,3 +9,4 @@ Pwdes = 28 # degrees, will be converted to radians
 Slhdes = -24
 ENSEMBLES = 1
 
+Min Spacing = 0.100
