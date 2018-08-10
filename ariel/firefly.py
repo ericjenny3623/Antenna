@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import functions
 from functions import ResponseModel
 import csv
-from constraint import ConstraintModel
 
 class Firefly:
 

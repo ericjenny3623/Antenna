@@ -7,5 +7,5 @@ k = 5 #x pi
 Nphi = 128
 Pwdes = 28 # degrees, will be converted to radians
 Slhdes = -24
-ENSEMBLES = 1
+ENSEMBLES = 1000
 
