@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import functions
 from functions import ResponseModel
 import csv
-from constraint import ConstraintModel
+from spacings import SpacingModel
 
 class Firefly:
 
@@ -14,7 +14,7 @@ class Firefly:
         self.Gamma = gamma
         self.T = t
         np.random.seed()
-        self.separation_model = ConstraintModel(0.1, self.N)
+        self.spacing_model = SpacingModel(0.1, self.N)
 
     def response_model(self, k=5*np.pi, n=10, angle_increment=128, peakWidth=28.0/180.0*np.pi, sidelobeHeight=-24):
         self.response_model = ResponseModel(k, n, angle_increment, peakWidth, sidelobeHeight)
@@ -26,10 +26,12 @@ class Firefly:
         self.fitnesses = [self.response_model.calculateFitness(functions.convertDb(self.responses[k])) for k in range (0, self.Nff)]
         self.averageFitnessOverTime = [0 for l in range (0, self.T)]
         self.averageFitnessOverTime[0] = np.mean(self.fitnesses)
-        self.separations = [self.separation_model.calculateSpacings(self.fireflies[i]) for i in range (0, self.Nff)]
-        self.goodSeparationCount = [self.separation_model.checkSpacings(self.separations[i]) for i in range (0, self.Nff)]
+        self.separations = [self.spacing_model.calculateSpacings(self.fireflies[i]) for i in range (0, self.Nff)]
+        self.goodSeparationCount = [self.spacing_model.checkSpacings(self.separations[i]) for i in range (0, self.Nff)]
         self.averageGoodSeparationOverTime = np.empty(self.T)
         self.averageGoodSeparationOverTime[0] = np.mean(self.goodSeparationCount)
+        self.averagePositionsOverTime = np.array([np.empty(self.N) for i in range (0, self.T)])
+        self.averagePositionsOverTime[0] = np.mean(self.fireflies, axis=0)
 
 
     def calculate_convergence(self, xi=[], xt=[]):
@@ -46,23 +48,35 @@ class Firefly:
                 xi += self.calculate_convergence(xi, fireflies[i])
         return xi
 
-    def random_movement(self, x, t, T):
+    def randomMovementMagnitude(self, t, T):
         max_movement = self.Alpha*(1-(t/float(T)))*0.5
-        if (np.random.rand(1) > 0.5):
-            if x + max_movement > 1:
-                movement = (1-x) * np.random.rand(1)
-            else:
-                movement = max_movement * np.random.rand(1)
-        else:
-            if x - max_movement < 0:
-                movement = (0-x) * np.random.rand(1)
-            else:
-                movement = max_movement * np.random.rand(1) * -1.0
-        return x + movement
+        return max_movement
 
-    def random_movements(self, x, t, T):
+
+    def random_movement(self, maxDown, maxUp, magnitude):
+        if (np.random.rand(1) > 0.5):
+            if magnitude > maxUp:
+                movement = maxUp * np.random.rand(1)
+            else:
+                movement = magnitude * np.random.rand(1)
+        else:
+            if magnitude > maxDown:
+                movement = maxDown * np.random.rand(1)
+            else:
+                movement = magnitude * np.random.rand(1) * -1.0
+        return movement
+
+    def random_movements(self, x, spacings, t, T):
+        magnitude = self.randomMovementMagnitude(t, T)
+        # print x
+        # print spacings
         for i in range (0, self.N):
-            x[i] = self.random_movement(x[i], t, T)
+            maxDown = max(spacings[i] - self.spacing_model.MIN_DISTANCE, 0.0)
+            maxUp = max(spacings[i+1] - self.spacing_model.MIN_DISTANCE, 0.0)
+            if i == self.N-1:
+                maxUp = spacings[i+1]
+            # print i, maxDown, maxUp
+            x[i] = x[i] + self.random_movement(maxDown, maxUp, magnitude)
         return x
 
 
@@ -80,16 +94,20 @@ class Firefly:
                 self.fireflies[i] = self.total_convergence(i, self.fireflies, self.fitnesses)
 
             for i in range(0, self.Nff):
-                self.fireflies[i] = self.random_movements(self.fireflies[i], t, self.T)
+                self.separations[i] = self.spacing_model.calculateSpacings(self.fireflies[i])
+
+                self.fireflies[i] = self.random_movements(self.fireflies[i], self.separations[i], t, self.T)
 
                 self.fireflies[i] = np.sort(self.fireflies[i])
                 self.responses[i] = self.response_model.angleSpectrum(self.fireflies[i])
                 self.fitnesses[i] = self.response_model.calculateFitness(functions.convertDb(self.responses[i]))
-                self.separations[i] = self.separation_model.calculateSpacings(self.fireflies[i])
-                self.goodSeparationCount[i] = self.separation_model.checkSpacings(self.separations[i])
+                self.separations[i] = self.spacing_model.calculateSpacings(self.fireflies[i])
+                self.goodSeparationCount[i] = self.spacing_model.checkSpacings(self.separations[i])
 
             self.averageGoodSeparationOverTime[t] = np.mean(self.goodSeparationCount)
             self.averageFitnessOverTime[t] = np.mean(self.fitnesses)
+            self.averagePositionsOverTime[t] = np.mean(self.fireflies, axis=0)
+
 
         return self.fireflies, self.responses, self.fitnesses
 
@@ -117,10 +135,15 @@ if __name__ == '__main__':
     fig = plt.figure()
     print np.sum(firefly.separations[0])
 
-    plt.plot(firefly.averageGoodSeparationOverTime)
+    plt.plot(firefly.averageGoodSeparationOverTime, label='Good Spacings')
+    plt.plot(firefly.averageFitnessOverTime, label='Fitness')
+    plt.legend()
+    plt.ylim(0,15)
     plt.show()
 
     indexsY = [np.full(firefly.N, i) for i in range (0, firefly.Nff)]
     plt.scatter(firefly.fireflies, indexsY, cmap='inferno')
     plt.show()
 
+    plt.scatter(firefly.averagePositionsOverTime, indexsY, cmap='inferno')
+    plt.show()
