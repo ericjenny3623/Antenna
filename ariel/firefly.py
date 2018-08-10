@@ -16,7 +16,6 @@ class Firefly:
         np.random.seed()
         self.separation_model = ConstraintModel(0.1, self.N)
 
-
     def response_model(self, k=5*np.pi, n=10, angle_increment=128, peakWidth=28.0/180.0*np.pi, sidelobeHeight=-24):
         self.response_model = ResponseModel(k, n, angle_increment, peakWidth, sidelobeHeight)
 
@@ -25,10 +24,12 @@ class Firefly:
         self.responses = [self.response_model.angleSpectrum(self.fireflies[j]) for j in range (0, self.Nff)]
         self.response_constraint = self.response_model.getRt()
         self.fitnesses = [self.response_model.calculateFitness(functions.convertDb(self.responses[k])) for k in range (0, self.Nff)]
-        self.average_fitnesses_over_time = [0 for l in range (0, self.T)]
-        self.average_fitnesses_over_time[0] = np.mean(self.fitnesses)
-        self.separations = [self.separation_model.checkPositions(self.fireflies[i]) for i in range (0, self.Nff)]
-        print self.separations
+        self.averageFitnessOverTime = [0 for l in range (0, self.T)]
+        self.averageFitnessOverTime[0] = np.mean(self.fitnesses)
+        self.separations = [self.separation_model.calculateSpacings(self.fireflies[i]) for i in range (0, self.Nff)]
+        self.goodSeparationCount = [self.separation_model.checkSpacings(self.separations[i]) for i in range (0, self.Nff)]
+        self.averageGoodSeparationOverTime = np.empty(self.T)
+        self.averageGoodSeparationOverTime[0] = np.mean(self.goodSeparationCount)
 
 
     def calculate_convergence(self, xi=[], xt=[]):
@@ -39,9 +40,9 @@ class Firefly:
     def total_convergence(self, index, fireflies, fitnesses):
         fitness = fitnesses[index]
         xi = fireflies[index]
-        good_separation_count = self.separations[index]
+        goodSeparationCount = self.goodSeparationCount[index]
         for i in range (0, self.Nff):
-            if (fitnesses[i] < fitness and i != index and good_separation_count < self.separations[i]):
+            if (fitnesses[i] < fitness and i != index and goodSeparationCount < self.goodSeparationCount[i]):
                 xi += self.calculate_convergence(xi, fireflies[i])
         return xi
 
@@ -84,10 +85,11 @@ class Firefly:
                 self.fireflies[i] = np.sort(self.fireflies[i])
                 self.responses[i] = self.response_model.angleSpectrum(self.fireflies[i])
                 self.fitnesses[i] = self.response_model.calculateFitness(functions.convertDb(self.responses[i]))
-                self.separations[i] = self.separation_model.checkPositions(self.fireflies[i])
-                print self.separations
+                self.separations[i] = self.separation_model.calculateSpacings(self.fireflies[i])
+                self.goodSeparationCount[i] = self.separation_model.checkSpacings(self.separations[i])
 
-            self.average_fitnesses_over_time[t] = np.mean(self.fitnesses)
+            self.averageGoodSeparationOverTime[t] = np.mean(self.goodSeparationCount)
+            self.averageFitnessOverTime[t] = np.mean(self.fitnesses)
 
         return self.fireflies, self.responses, self.fitnesses
 
@@ -99,7 +101,7 @@ class Firefly:
     #     for item in sublist:
     #         self.totalList[t].append(item)
     # self.totalList[t].extend(self.fitnesses)
-    # self.totalList[t].append(self.average_fitnesses_over_time[t])
+    # self.totalList[t].append(self.averageFitnessOverTime[t])
     # self.totalList[t] = [round(elem, 4) for elem in self.totalList[t]]
     #
     # with open(self.filename, "wb") as file:
@@ -113,7 +115,7 @@ if __name__ == '__main__':
     firefly.generate_initials()
     firefly.run()
     fig = plt.figure()
-    plt.plot(firefly.average_fitnesses_over_time)
+    plt.plot(firefly.averageGoodSeparationOverTime)
     # # plt.savefig("graphs/average_fitness_over_time/" + firefly.imagename)
     plt.show()
     # hist, edges = np.histogram(firefly.fireflies, bins=100)
