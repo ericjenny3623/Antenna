@@ -64,11 +64,11 @@ if __name__ == "__main__":
     cax = ax.matshow(difcor, interpolation='nearest')
     fig.colorbar(cax, label="Correlation")
     plt.title("Correlation between Antenna Element Separations")
-    alpha = ['E1-0.0', 'S1','S2','S3','S4','S5','S6','S7','S8','S9', '1.0-E10']
+    alpha = ['(E1-0)', 'S1','S2','S3','S4','S5','S6','S7','S8','S9', '(1-E10)']
     ax.set_xticks(np.arange(len(alpha)))
     ax.set_yticks(np.arange(len(alpha)))
-    ax.set_xticklabels(['']+alpha)
-    ax.set_yticklabels(['']+alpha)
+    ax.set_xticklabels(alpha)
+    ax.set_yticklabels(alpha)
     ax.axis('image')
     print np.arange(len(alpha))
 
