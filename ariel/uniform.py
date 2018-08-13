@@ -113,16 +113,21 @@ class RandomSamplingModel:
         DbModeledAverage = functions.convertDb(self.generateModeledResponse())
 
         fig = plt.figure()
-        plt.plot(DbAverageResponse, label="Mean from Simulation")
-        plt.plot(DbModeledAverage, label="Modeled Theoretical")
-        plt.plot(self.response_model.getRt(), label="Desired")
+        angleSpectrum = [(i*1.0/self.N_phi*180) for i in range (0, self.N_phi)]
+        plt.plot(angleSpectrum, DbAverageResponse, label="Simulation")
+        plt.plot(angleSpectrum, DbModeledAverage, label="Analytical Model")
+        plt.plot(angleSpectrum, self.response_model.getRt(), label="Desired")
+        plt.title("Mean Response Generated from Random Uniform Sampling for Antenna Element Positions")
         plt.legend()
+        plt.ylabel("Response (dB)")
+        plt.xlabel("Angle (degrees)")
         plt.ylim([-65,5])
         plt.show()
 
         plt.plot(variance, label="Simulation")
-        plt.plot(modeledVariance, label="Modeled Theoretical")
+        plt.plot(modeledVariance, label="Analytical Model")
         plt.legend()
+
         plt.show()
         return mse, DbAverageResponse
 
@@ -220,6 +225,6 @@ class RandomSamplingModel:
 if __name__ == '__main__':
 
     model = RandomSamplingModel(sample_size=10000, alpha=0.0)
-    # print model.checkRandomUniformSampling()
+    print model.checkRandomUniformSampling()
     # print model.sampleUsingPercentileRanges()
-    print model.sampleFromCDF()
+    # print model.sampleFromCDF()

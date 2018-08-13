@@ -15,14 +15,19 @@ class LinearRegressionModel:
         self.SAMPLES = sample_size
         self.response_model()
         self.Stdev = stdev
+        self.filename = "data/2018-08-02_16.32/"
+
 
     def response_model(self, k=5*np.pi, n=10, angle_increment=128, peakWidth=28.0/180.0*np.pi, sidelobeHeight=-24):
         self.response_model = ResponseModel(k, n, angle_increment, peakWidth, sidelobeHeight)
 
-    def get_dataset(self):
-        filename = "data/2018-07-19_09.42/"
-        dfx = pd.read_csv(filename + "x.csv", header=None)
+    def get_fireflies_positions(self):
+        dfx = pd.read_csv(self.filename + "x.csv", header=None)
         return dfx
+
+    def get_fireflies_responses(self):
+        dfr = pd.read_csv(self.filename + "R.csv", header=None)
+        return dfr
 
     def samplePercentileRange(self, min, max, length):
         dif = max - min
@@ -143,6 +148,8 @@ class LinearRegressionModel:
 
         meanFitness = np.mean(fitnesses)
 
+        return averageResponse, variance, meanFitness
+
         if show==True:
             for i in range (0, 10):
                 x = fireflies[:,i]
@@ -167,7 +174,7 @@ class LinearRegressionModel:
         return meanFitness
 
     def generateFromLinRegressLast(self):
-        dfx = self.get_dataset()
+        dfx = self.get_fireflies_positions()
         tenth = np.percentile(dfx, 10.0, axis=0)
         ninetieth = np.percentile(dfx, 90.0, axis=0)
 
@@ -181,7 +188,7 @@ class LinearRegressionModel:
         return fireflies
 
     def generateFromLinRegressAny(self):
-        dfx = self.get_dataset()
+        dfx = self.get_fireflies_positions()
         dif = self.calculateDifs(dfx)
         tenth = np.percentile(dif, 10.0, axis=0)
         ninetieth = np.percentile(dif, 90.0, axis=0)
@@ -225,5 +232,22 @@ class LinearRegressionModel:
 
 if __name__ == '__main__':
 
-    model = LinearRegressionModel(sample_size=100000, stdev=0.1)
-    model.analyze(model.generateFromLinRegressAny(), show=True)
+    model = LinearRegressionModel(sample_size=10000, stdev=0.1)
+    rLast, vLast, fLast = model.analyze(model.generateFromLinRegressLast(), show=False)
+    rAny, vAny, fAny = model.analyze(model.generateFromLinRegressAny(), show=False)
+    rFirefly = model.get_fireflies_responses()
+    rFirefly = np.mean(rFirefly, axis=0)
+    rFirefly = functions.convertDb(rFirefly)
+
+    fig = plt.figure()
+    angleSpectrum = [(i*1.0/model.N_phi*180) for i in range (0, model.N_phi)]
+    plt.plot(angleSpectrum, rLast, label="From Last Position")
+    plt.plot(angleSpectrum, rAny, label="From Random Spacing")
+    plt.plot(angleSpectrum, rFirefly, label="Firefly")
+    plt.plot(angleSpectrum, model.response_model.getRt(), label="Desired")
+    plt.title("Mean Response Generated from Linear Regression for Antenna Element Positions")
+    plt.legend()
+    plt.ylabel("Response (dB)")
+    plt.xlabel("Angle (degrees)")
+    plt.ylim([-65,5])
+    plt.show()
