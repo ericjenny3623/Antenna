@@ -245,7 +245,7 @@ if __name__ == '__main__':
     plt.plot(angleSpectrum, rAny, label="From Random Spacing")
     plt.plot(angleSpectrum, rFirefly, label="Firefly")
     plt.plot(angleSpectrum, model.response_model.getRt(), label="Desired")
-    plt.title("Mean Response Generated from Linear Regression for Antenna Element Positions")
+    plt.title("Mean Response Generated from\nLinear Regression for Antenna Element Positions")
     plt.legend()
     plt.ylabel("Response (dB)")
     plt.xlabel("Angle (degrees)")

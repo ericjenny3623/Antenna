@@ -117,7 +117,7 @@ class RandomSamplingModel:
         plt.plot(angleSpectrum, DbAverageResponse, label="Simulation")
         plt.plot(angleSpectrum, DbModeledAverage, label="Analytical Model")
         plt.plot(angleSpectrum, self.response_model.getRt(), label="Desired")
-        plt.title("Mean Response Generated from Random Uniform Sampling for Antenna Element Positions")
+        plt.title("Mean Response Generated from\nRandom Uniform Sampling for Antenna Element Positions")
         plt.legend()
         plt.ylabel("Response (dB)")
         plt.xlabel("Angle (degrees)")
