@@ -32,7 +32,7 @@ if __name__ == "__main__":
         firefly.generate_initials()
         print "ensemble: %s" % ensemble
 
-        x, R, fitness, avgGS, avgF, avgP = firefly.run()
+        x, R, fitness, GS, avgGS, avgF, avgP = firefly.run()
 
         if ensemble == 0:
             with open(filepath + "x.csv", "w") as xfile:
@@ -44,6 +44,9 @@ if __name__ == "__main__":
             with open(filepath + "fitness.csv", "w") as fitnessfile:
                 writer = csv.writer(fitnessfile)
                 writer.writerow(fitness)
+            with open(filepath + "spacings.csv", "w") as spacingsFile:
+                writer = csv.writer(spacingsFile)
+                writer.writerow(GS)
             with open(filepath + "avgFitness.csv", "w") as avgFitnessFile:
                 writer = csv.writer(avgFitnessFile)
                 writer.writerow(avgF)
@@ -66,6 +69,9 @@ if __name__ == "__main__":
             with open(filepath + "fitness.csv", "a") as fitnessfile:
                 writer = csv.writer(fitnessfile)
                 writer.writerow(fitness)
+            with open(filepath + "spacings.csv", "a") as spacingsFile:
+                writer = csv.writer(spacingsFile)
+                writer.writerow(GS)
             with open(filepath + "avgFitness.csv", "a") as avgFitnessFile:
                 writer = csv.writer(avgFitnessFile)
                 writer.writerow(avgF)

@@ -118,7 +118,7 @@ class Firefly:
             self.averagePositionsOverTime[t] = np.mean(self.fireflies, axis=0)
 
 
-        return self.fireflies, self.responses, self.fitnesses, self.averageGoodSeparationOverTime, self.averageFitnessOverTime, self.averagePositionsOverTime
+        return self.fireflies, self.responses, self.fitnesses, self.goodSeparationCount, self.averageGoodSeparationOverTime, self.averageFitnessOverTime, self.averagePositionsOverTime
 
     # time = datetime.__str__(datetime.today())
     # self.filename = "debug/debug_" + time + ".csv"
