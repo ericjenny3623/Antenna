@@ -156,6 +156,7 @@ class LinearRegressionModel:
                 count, bins = np.histogram(x, bins=50, density=True)
                 plt.plot(bins[:-1], count)
             plt.xlim([0,1])
+            plt.title("Positions Generated from Linear Regression")
             plt.show()
 
             fig = plt.figure()
@@ -232,22 +233,32 @@ class LinearRegressionModel:
 
 if __name__ == '__main__':
 
-    model = LinearRegressionModel(sample_size=10000, stdev=0.1)
-    rLast, vLast, fLast = model.analyze(model.generateFromLinRegressLast(), show=False)
-    rAny, vAny, fAny = model.analyze(model.generateFromLinRegressAny(), show=False)
-    rFirefly = model.get_fireflies_responses()
-    rFirefly = np.mean(rFirefly, axis=0)
-    rFirefly = functions.convertDb(rFirefly)
-
-    fig = plt.figure()
-    angleSpectrum = [(i*1.0/model.N_phi*180) for i in range (0, model.N_phi)]
-    plt.plot(angleSpectrum, rLast, label="From Last Position")
-    plt.plot(angleSpectrum, rAny, label="From Random Spacing")
-    plt.plot(angleSpectrum, rFirefly, label="Firefly")
-    plt.plot(angleSpectrum, model.response_model.getRt(), label="Desired")
-    plt.title("Mean Response Generated from\nLinear Regression for Antenna Element Positions")
-    plt.legend()
-    plt.ylabel("Response (dB)")
-    plt.xlabel("Angle (degrees)")
-    plt.ylim([-65,5])
+    model = LinearRegressionModel(sample_size=10000, stdev=0.0)
+    f = model.generateFromLinRegressLast()
+    for i in range (0, 10):
+        x = f[:,i]
+        count, bins = np.histogram(x, bins=50, density=True)
+        plt.plot(np.concatenate((bins, [bins[49]])), np.concatenate(([0], count, [0])))
+    plt.xlim([0,1])
+    plt.title("Positions Generated from Linear Regression")
+    plt.ylabel("Count")
+    plt.xlabel("Position")
     plt.show()
+    # rLast, vLast, fLast = model.analyze(model.generateFromLinRegressLast(), show=False)
+    # rAny, vAny, fAny = model.analyze(model.generateFromLinRegressAny(), show=False)
+    # rFirefly = model.get_fireflies_responses()
+    # rFirefly = np.mean(rFirefly, axis=0)
+    # rFirefly = functions.convertDb(rFirefly)
+
+    # fig = plt.figure()
+    # angleSpectrum = [(i*1.0/model.N_phi*180) for i in range (0, model.N_phi)]
+    # plt.plot(angleSpectrum, rLast, label="From Last Position")
+    # plt.plot(angleSpectrum, rAny, label="From Random Spacing")
+    # plt.plot(angleSpectrum, rFirefly, label="Firefly")
+    # plt.plot(angleSpectrum, model.response_model.getRt(), label="Desired")
+    # plt.title("Mean Response Generated from\nLinear Regression for Antenna Element Positions")
+    # plt.legend()
+    # plt.ylabel("Response (dB)")
+    # plt.xlabel("Angle (degrees)")
+    # plt.ylim([-65,5])
+    # plt.show()

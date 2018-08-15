@@ -64,7 +64,7 @@ if __name__ == "__main__":
     cax = ax.matshow(difcor, interpolation='nearest')
     fig.colorbar(cax, label="Correlation")
     plt.title("Correlation between Antenna Element Separations")
-    alpha = ['(E1-0)', 'S1','S2','S3','S4','S5','S6','S7','S8','S9', '(1-E10)']
+    alpha = ['S0', 'S1','S2','S3','S4','S5','S6','S7','S8','S9', 'S10']
     ax.set_xticks(np.arange(len(alpha)))
     ax.set_yticks(np.arange(len(alpha)))
     ax.set_xticklabels(alpha)
@@ -91,27 +91,27 @@ if __name__ == "__main__":
     # plt.show()
 
 
-    # num = len(dif.columns)
-    # for i in range (1, num):
-    #     x = dif[i]
-    #     y = dif[i+1]
-    #     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    num = len(dif.columns)
+    for i in range (0, num-1):
+        x = dif[i]
+        y = dif[i+1]
+        slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
-    #     hb = plt.hexbin(x, y, gridsize=25, cmap='viridis', extent=[0.0, 0.3, 0.0, 0.3])
-    #     plt.plot(np.unique(x), (np.unique(x)*slope)+intercept, label="Std Error: %.3f" %(std_err), color='mediumvioletred')
-    #     plt.axis([0.0, 0.3, 0.0, 0.3])
-    #     title = "Separations of %d & %d and %d & %d with fit" % (i , i + 1, i + 1, i + 2)
+        hb = plt.hexbin(x, y, gridsize=25, cmap='viridis', extent=[0.0, 0.3, 0.0, 0.3])
+        plt.plot(np.unique(x), (np.unique(x)*slope)+intercept, label="Std Error: %.3f" %(std_err), color='mediumvioletred')
+        plt.axis([0.0, 0.3, 0.0, 0.3])
+        title = "Relationship between " + alpha[i] + " & " + alpha[i+1]
 
-    #     plt.title(title)
-    #     plt.legend()
-    #     plt.ylabel("%d & %d" % (i + 1, i + 2))
-    #     plt.xlabel("%d & %d" % (i, i + 1))
-    #     cb = plt.colorbar(hb)
-    #     plt.savefig(filename + "graphs/" + title)
-    #     # plt.show()
-    #     plt.close()
-    #     # cb.set_label('Counts')
-    #     print i
+        plt.title(title)
+        plt.legend()
+        plt.ylabel(alpha[i+1])
+        plt.xlabel(alpha[i])
+        cb = plt.colorbar(hb, label="Count")
+        plt.savefig(filename + "graphs/" + title)
+        # plt.show()
+        plt.close()
+        # cb.set_label('Counts')
+        print i
 
     # num = len(dif.columns)
     # for i in range (0, num):
