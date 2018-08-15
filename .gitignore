@@ -1,4 +1,7 @@
 $ cat .gitignore
-*.[oa]
+# *.[oa]
 *~
 /ariel/data/2018-07-19_09.42/R.csv
+/ariel/data/2018-08-02_16.32/R.csv
+*.pyc
+/ariel/data/*/R.csv
