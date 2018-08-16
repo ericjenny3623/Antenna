@@ -22,7 +22,7 @@ class LinearRegressionModel:
         self.response_model = ResponseModel(k, n, angle_increment, peakWidth, sidelobeHeight)
 
     def get_fireflies_positions(self):
-        dfx = pd.read_csv(self.filename + "x.csv", header=None)
+        dfx = pd.read_csv(self.filename + "xNew.csv", header=None)
         return dfx
 
     def get_fireflies_responses(self):
@@ -40,7 +40,7 @@ class LinearRegressionModel:
     def calculateDifs(self, dfx):
         dif = dfx.diff(axis=1)
         dif[0] = dfx[0]
-        # dif[10] = 1 - dfx[9]
+        dif[10] = 1 - dfx[9]
         return dif
 
     def linearRegOld(self, dfx):
@@ -134,6 +134,41 @@ class LinearRegressionModel:
             x[i] = self.randomMovement(x[i], stdev)
         return x
 
+    def generateFromLinRegressLast(self):
+        dfx = self.get_fireflies_positions()
+        tenth = np.percentile(dfx, 10.0, axis=0)
+        ninetieth = np.percentile(dfx, 90.0, axis=0)
+
+        slopes, intercepts = self.linearRegOld(dfx)
+        fireflies = np.array([np.empty(self.N) for i in range (0,self.SAMPLES)])
+
+        for i in range (0, self.SAMPLES):
+            index = 9
+            fireflies[i] = self.randomMovements(self.generateLastElement(self.samplePercentileRange(tenth[index],ninetieth[index],1), slopes, intercepts), self.Stdev)
+
+        return fireflies
+
+    def generateFromLinRegressAny(self):
+        dfx = self.get_fireflies_positions()
+        dif = self.calculateDifs(dfx)
+        tenth = np.percentile(dif, 05.0, axis=0)
+        ninetieth = np.percentile(dif, 95.0, axis=0)
+
+        slopes, intercepts = self.linearReg(dif)
+        slopesr, interceptsr = self.linearRegInverse(dif)
+        fireflies = np.array([np.empty(self.N) for i in range (0,self.SAMPLES)])
+
+        for i in range (0, self.SAMPLES):
+            index = np.random.randint(0,10)
+            index = 9
+            initials = self.samplePercentileRange(tenth[index],ninetieth[index],1)
+            generated = self.generateAny(initials, index, slopes, intercepts, slopesr, interceptsr)
+            fireflies[i] = self.randomMovements(generated, self.Stdev)
+
+        return fireflies
+
+
+
     def analyze(self, fireflies, show=False):
         responses = np.empty([self.SAMPLES,self.N_phi])
         fitnesses = np.empty(self.SAMPLES)
@@ -148,12 +183,11 @@ class LinearRegressionModel:
 
         meanFitness = np.mean(fitnesses)
 
-        return averageResponse, variance, meanFitness
 
         if show==True:
             for i in range (0, 10):
                 x = fireflies[:,i]
-                count, bins = np.histogram(x, bins=50, density=True)
+                count, bins = np.histogram(x, bins=50, density=True, range=[0,1])
                 plt.plot(bins[:-1], count)
             plt.xlim([0,1])
             plt.title("Positions Generated from Linear Regression")
@@ -172,43 +206,14 @@ class LinearRegressionModel:
             plt.show()
 
         print meanFitness
-        return meanFitness
+        return averageResponse, variance, meanFitness
 
-    def generateFromLinRegressLast(self):
-        dfx = self.get_fireflies_positions()
-        tenth = np.percentile(dfx, 10.0, axis=0)
-        ninetieth = np.percentile(dfx, 90.0, axis=0)
-
-        slopes, intercepts = self.linearRegOld(dfx)
-        fireflies = np.array([np.empty(self.N) for i in range (0,self.SAMPLES)])
-
-        for i in range (0, self.SAMPLES):
-            index = 9
-            fireflies[i] = self.randomMovements(self.generateLastElement(self.samplePercentileRange(tenth[index],ninetieth[index],1), slopes, intercepts), self.Stdev)
-
-        return fireflies
-
-    def generateFromLinRegressAny(self):
-        dfx = self.get_fireflies_positions()
-        dif = self.calculateDifs(dfx)
-        tenth = np.percentile(dif, 10.0, axis=0)
-        ninetieth = np.percentile(dif, 90.0, axis=0)
-
-        slopes, intercepts = self.linearReg(dif)
-        slopesr, interceptsr = self.linearRegInverse(dif)
-        fireflies = np.array([np.empty(self.N) for i in range (0,self.SAMPLES)])
-
-        for i in range (0, self.SAMPLES):
-            index = np.random.randint(0,10)
-            fireflies[i] = self.randomMovements(self.generateAny(self.samplePercentileRange(tenth[index],ninetieth[index],1), index, slopes, intercepts, slopesr, interceptsr), self.Stdev)
-
-        return fireflies
 
     def samples(self):
         fits = np.empty(30)
         stdev = np.empty(30)
         for i in range (0,30):
-            fits[i] = self.analyze(self.generateFromLinRegressAny())
+            r_, v_, fits[i] = self.analyze(self.generateFromLinRegressAny())
             stdev[i] = self.Stdev
             self.Stdev += 0.01
 
@@ -218,7 +223,12 @@ class LinearRegressionModel:
         fits = np.empty(30)
         stdev = np.empty(30)
         for i in range (0,30):
-            fits[i] = self.analyze(self.generateFromLinRegressLast())
+            r_, v_, fits[i] = self.analyze(self.generateFromLinRegressLast())
+            stdev[i] = self.Stdev
+            self.Stdev += 0.01
+
+        for i in range (0,30):
+            r_, v_, fits[i] = self.analyze(self.generateFromLinRegressLast())
             stdev[i] = self.Stdev
             self.Stdev += 0.01
 
@@ -232,26 +242,17 @@ class LinearRegressionModel:
 
 
 if __name__ == '__main__':
-
     model = LinearRegressionModel(sample_size=10000, stdev=0.0)
-    f = model.generateFromLinRegressLast()
-    for i in range (0, 10):
-        x = f[:,i]
-        count, bins = np.histogram(x, bins=50, density=True)
-        plt.plot(np.concatenate((bins, [bins[49]])), np.concatenate(([0], count, [0])))
-    plt.xlim([0,1])
-    plt.title("Positions Generated from Linear Regression")
-    plt.ylabel("Count")
-    plt.xlabel("Position")
-    plt.show()
-    # rLast, vLast, fLast = model.analyze(model.generateFromLinRegressLast(), show=False)
-    # rAny, vAny, fAny = model.analyze(model.generateFromLinRegressAny(), show=False)
-    # rFirefly = model.get_fireflies_responses()
-    # rFirefly = np.mean(rFirefly, axis=0)
-    # rFirefly = functions.convertDb(rFirefly)
 
-    # fig = plt.figure()
-    # angleSpectrum = [(i*1.0/model.N_phi*180) for i in range (0, model.N_phi)]
+    # rLast, vLast, fLast = model.analyze(model.generateFromLinRegressLast(), show=True)
+    rAny, vAny, fAny = model.analyze(model.generateFromLinRegressAny(), show=True)
+    rFirefly = model.get_fireflies_responses()
+    vFirefly = np.var(rFirefly, axis=0)
+    rFirefly = np.mean(rFirefly, axis=0)
+    rFirefly = functions.convertDb(rFirefly)
+
+    fig = plt.figure()
+    angleSpectrum = [(i*1.0/model.N_phi*180) for i in range (0, model.N_phi)]
     # plt.plot(angleSpectrum, rLast, label="From Last Position")
     # plt.plot(angleSpectrum, rAny, label="From Random Spacing")
     # plt.plot(angleSpectrum, rFirefly, label="Firefly")
@@ -262,3 +263,14 @@ if __name__ == '__main__':
     # plt.xlabel("Angle (degrees)")
     # plt.ylim([-65,5])
     # plt.show()
+    # print vFirefly
+    plt.plot(angleSpectrum, vLast, label="From Last Position")
+    plt.plot(angleSpectrum, vAny, label="From Random Spacing")
+    plt.plot(angleSpectrum, vFirefly, label="Firefly")
+    # plt.plot(angleSpectrum, model.response_model.getRt(), label="Desired")
+    plt.title("Variance of Response Generated from\nLinear Regression for Antenna Element Positions")
+    plt.legend()
+    plt.ylabel("Variance")
+    plt.xlabel("Angle (degrees)")
+    # plt.ylim([-65,5])
+    plt.show()

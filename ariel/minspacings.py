@@ -137,8 +137,8 @@ class Firefly:
 
 
 if __name__ == '__main__':
-    firefly = Firefly()
-    firefly.response_model()
+    firefly = Firefly(n=6, t=300)
+    firefly.response_model(n=6)
     firefly.generate_initials()
 
     firefly.run()
@@ -147,12 +147,12 @@ if __name__ == '__main__':
     plt.plot(firefly.averageGoodSeparationOverTime, label='Good Spacings')
     plt.plot(firefly.averageFitnessOverTime, label='Fitness')
     plt.legend()
-    plt.ylim(0,15)
+    # plt.ylim(0,15)
     plt.show()
 
-    # indexsY = [np.full(firefly.N, i) for i in range (0, firefly.Nff)]
-    # plt.scatter(firefly.fireflies, indexsY, c='mediumspringgreen', edgecolors='mediumaquamarine')
-    # plt.show()
+    indexsY = [np.full(firefly.N, i) for i in range (0, firefly.Nff)]
+    plt.scatter(firefly.fireflies, indexsY, c='mediumspringgreen', edgecolors='mediumaquamarine')
+    plt.show()
 
     indexsY = [np.full(firefly.N, i) for i in range (0, firefly.T)]
     plt.scatter(firefly.averagePositionsOverTime, indexsY, c='goldenrod', edgecolors='darkgoldenrod')
