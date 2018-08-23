@@ -1,0 +1,621 @@
+\documentclass[...]{beamer}
+\setbeamertemplate{caption}[numbered]
+%\usepackage[pdftex,dvipsnames]{color}
+\usepackage[dvips,matrix,arrow,ps,color,line,curve,frame]{xy}
+\usepackage{color}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{epsfig}
+\usepackage{url}
+\usepackage{rotating}
+\usepackage{acronym}
+\usepackage{verbatim}
+\usepackage{lscape}
+\usepackage{enumerate}
+\usepackage{xy}
+\usetheme{default}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage[noend]{algpseudocode}
+%\usepackage{fontspec}
+%\setmainfont{Hoefler Text}
+\newcommand*\Let[2]{\State #1 $\gets$ #2}
+%Make comments left justified
+\renewcommand{\Comment}[2][.3\linewidth]{%
+  \leavevmode\hfill\makebox[#1][l]{//~#2}}
+%Remove \textbf{do} and \textbf{then} from for loops
+\renewcommand\algorithmicthen{}
+\renewcommand\algorithmicdo{}
+
+
+\title{Proposal Defense: Synthesis of Non-uniformly Spaced Antenna Arrays Using Data-driven Probabilistic Models}
+\author{Nicholas Misiunas\\
+Center for Advanced Computation and Telecommunications\\
+Department of Electrical and Computer Engineering\\
+University of Massachusetts Lowell}
+\date{February 2017}
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Outline}
+  \begin{itemize}
+    \item Introduction
+      \begin{itemize}
+        \item Thesis Objective
+        \item Motivation
+        \item Prior Work
+      \end{itemize}
+    \item Proposed Approach
+    \item Problem Formulation for Linear Array
+      \begin{itemize}
+        \item Optimization of Element Locations: Firefly Algorithm
+        \item Analysis of Positional Vectors
+        \item Hypothesized Probability Models
+        \item A Regression Model for Assignment of Element Positions
+        \item Performance Results
+      \end{itemize}
+    \item Formulation for Planar Array
+      \begin{itemize}
+        \item Mapping to a Parallel Program (GPU Implementation)
+      \end{itemize}
+    \item Conclusion
+    \item Timeline
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Thesis Objective}
+
+  Investigate the design and performance of beam forming from randomly spaced antenna elements on linear and planar arrays.\\
+  \vspace{3mm}
+  To accomplish this:
+  \begin{itemize}
+    \item Determine the probability distributions for element locations
+    \item Design a model for rapid configuration of inter-element spacings that minimizes variance in the random beam forms
+    \item Characterize the robustness of the system to positional errors
+  \end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Motivation}
+
+  Most antenna arrays consist of uniformly spaced elements that require complex current distributions across the elements to generate beams with required beamwidth (BW) and sidelobe levels (SLL).\\
+  \vspace{2mm}
+  With the advent of dense arrays formed with low-cost sensors, this is an opportunity to optimize spatial location.\\
+  \vspace{2mm}
+
+  Spacing elements non-uniformly will:
+
+  \begin{itemize}
+    \item Reduce complexity in eliminating element specific excitation currents for elements in a uniformly spaced array.
+    \item Allow a reduced number of elements to be configured for beamforming.
+    \item Design of non-uniformly spaced arrays particularly relevant to:
+      \vspace{-4mm}
+      \begin{itemize}
+        \item Minimal activation of sensors in a random distribution with fixed positions [Wong (2012) \textit{et al.} \cite{Wong2012}].
+        \item UAV swarm acting as a relay.  Uniform spacings meant positional errors were significant [Palat \textit{et al.}(2005) \cite{Palat2005}].
+        \item Grating lobe reduction in micro-UAV swarm [Namin(2012)\cite{Namin2012}].
+      \end{itemize}
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Prior Work}
+
+  \begin{itemize}
+    \item Unz (1960) \cite{Unz1960} investigated non-uniformly spaced arrays for element reduction by using a matrix inversion method to determine the required currents to match a target pattern.
+    \item King (1960) \cite{King1960} investigated different non-uniform spacing schemes with uniform amplitudes with the goal of eliminating grating lobes and reducing the required number of elements.  Noted that SLL was lower than uniform spacing for some schemes.
+    \item Ishimaru (1962) \cite{Ishimaru1962} built upon Taylor (1955) \cite{Taylor1955} and derived a source position function using an infinite series (including only the first term) where non-uniform spacings with equal amplitude reduced the SLL.  However, the SLL was not constant, and rose with distance from main beam.
+    \item Au and Thompson (2013) \cite{Au2013} also built on Taylor to obtain a position function through contour integration, yielding constant SLL matching a modified Dolph-Chebychev.
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Prior Work (Cont'd)}
+  Recently, optimization algorithms have seen large application to array synthesis.
+
+  \begin{itemize}
+    \item Metaheuristic algorithms provide a flexibility that is attractive for antenna array synthesis.
+    \item Firefly algorithm applied to optimizing element positions for a chosen SLL and designing a null [Zaman \textit{et al.} (2012) \cite{Zaman2012}, Basu \textit{et al.} (2011) \cite{Basu2011}].  Obtains one solution, potentially large run time.
+    \item Particle swarm optimization for optimizing element positions to minimize SLL [Bevelacque (2008) \cite{Bevelacqua2008}].  Used MATLAB, many hours required for low element count.
+  \end{itemize}
+
+  Lack of models for fast non-uniformly spaced array synthesis.  Little work towards using optimization algorithms to create a distribution of element positions whose beam pattern matches a target.
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Proposed Work}
+
+  Methodology:
+  \begin{itemize}
+    \item Use a metaheuristic algorithm to generate an ensemble of position vectors that generate a target beam pattern.
+    \item Analysis of this data to hypothesize probabilistic model for element positions and element spacings.
+    \item Application of the model as a prior to accelerate optimization.
+  \end{itemize}
+  \vspace{3mm}
+  Technical considerations:
+  \begin{itemize}
+    \item Parallel implementation to allow fast calculation of position vectors.
+    \item Sensitivity to positional variations.
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Preliminary Results}
+  
+  \begin{itemize}
+    \item Linear Array Formulation
+    \item Optimization model: Firefly Algorithm
+    \item Computational complexity
+    \item Analysis of $\underline{x}^*$ for the linear array.
+    \item Parallel GPU implementation for planar array.
+  \end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}
+  \frametitle{Geometry of a Linear Array}
+
+  \begin{itemize}
+    \item Direction of incoming source signal: $\phi_d$.
+    \item $x_n$: position of the $n^{th}$ element
+  \end{itemize}
+  
+  \begin{figure} 
+    \centerline{\hbox{ \hspace{0.0in}
+        \includegraphics[height=2in,width=4in]{./plots/arraygeo.eps}
+      }
+    }
+    \caption {Geometry of Linear Array}\label{fig:arraygeo}
+  \end{figure}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Overview}
+
+  Directivity or beam pattern from linear array of aperture length $L$ is generated from this expression:
+
+  \begin{equation*}
+    R(u) = \frac{1}{N}\sum\limits_{n=0}^{N-1}\cos\left(x_n(u - u_d)\right)
+  \end{equation*}
+
+  \begin{itemize}
+    \item Directional cosine: $u=kL\cos\phi$, $u_d=kL\cos\phi_d$
+    \item $\phi$: azimuthal angle.
+    \item $k$: wave number $\left(\frac{2\pi}{\lambda}\right)$.
+    \item $\lambda$: wavelength.
+    \item $\underline{x}: [x_0, x_1, ..., x_{N-1}]$.
+  \end{itemize}
+
+  \vspace{3mm}
+  Objective: Find optimal $\underline{x}^*$ to match given $R_T(u)$.
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Example Beam Form}
+
+  \begin{itemize}
+    \item Steered to $\phi_d=\frac{\pi}{2}$.
+    \item $R_T(u)$ consists of a side lobe level ($SLL_T$) and beamwidth ($BW_T$).
+  \end{itemize}
+
+  \begin{figure} 
+    \centerline{\hbox{ \hspace{0.0in}
+        \includegraphics[height=2in,width=4in]{./plots/meandb.eps}
+      }
+    }
+    \caption {Example Beam Form and Target Function}\label{fig:meandb}
+  \end{figure}
+
+\end{frame}
+
+
+
+\begin{frame}
+  \frametitle{Firefly Algorithm [Yang (2009) \cite{Yang2009}]}
+
+  \begin{equation*}
+    \underline{x}_i^{t+1} = \underline{x}_i^t + \sum\limits_{j \in \hat{N}_{i,f\!f}}e^{-\gamma r_{ij}^2}\left(\underline{x}_j^t - \underline{x}_i^t\right) + \alpha \left(1-\frac{t}{T}\right)\underline{\epsilon}_i^{t+1}
+  \end{equation*}
+
+  \begin{itemize}
+    \item $\underline{x}_i^{t+1}$: vector of positions for $i^{th}$ firefly at $(t+1)^{th}$ iteration.
+    \item $N_{f\!f}$: set of fireflies. $\hat{N}_{i,f\!f}$: more attractive fireflies.
+    \item $r_{ij}$: distance between $i^{th}$ and $j^{th}$ fireflies.
+    \item $\gamma$: governs visibility region.
+    \item $\underline{\epsilon}_i^{t+1}$: vector of random perturbations.
+    \item $\alpha$: governs random step size.
+    \item $T$: total number of iterations
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Firefly Algorithm, Cont'd}
+
+  The fitness of a firefly is computed by comparing its beam form with the target:
+
+  \begin{equation*}
+    f_i^t = -\sum_u\left[R_i^t(u) - R_T(u)\right]^2 ~ I(u)
+  \end{equation*}
+
+  where  $I(u) = 1$ for $R_i^t(u) > R_T(u)$.  The target function is:
+
+  \begin{equation*}
+    R_T(u) = 
+    \begin{cases}
+      1,& -\frac{BW_T}{2} < \cos^{-1}\left(\frac{u}{kL}\right) < \frac{BW_T}{2}\\
+      SLL_T,& \text{else}
+    \end{cases}
+  \end{equation*}
+
+  where $BW_T$ is the beam width and $SLL_T$ is the side lobe level.
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Computational Complexity}
+
+  The evaluation function scales as $\mathcal{O}\left(N \cdot N_u\right)$, where $N_u$ is the angular resolution.\\
+  \vspace{3mm}
+  The firefly algorithm scales as $\mathcal{O}\left(N_{f\!f}^2 \cdot N_{ss} + N_{f\!f} \cdot N_{eval}\right)$, where $N_{ss}$ is the size of the search space and $N_{eval}$ is the scaling of the evaluation function.\\
+  \vspace{3mm}
+  CPU serial profiling results:
+  \vspace{2mm}
+
+  \begin{minipage}{.9\linewidth}
+    \centering
+    \begin{tabular}{| c | c |}
+      \hline
+      Function & Instruction Fetches\\
+      \hline
+      $\cos$ & 34\%\\
+      \hline
+      $R_i(\phi_j)$ & 47\%\\
+      \hline
+      $\log$ & 2\%\\
+      \hline
+      $e$ & 2\%\\
+      \hline
+    \end{tabular}
+    \label{table:CPUprofile}
+  \end{minipage}\\
+  \vspace{0.5mm}
+  For linear array synthesis: parallelize fireflies when computing beam form.
+
+\end{frame}
+\begin{frame}
+  \frametitle{Parameters}
+
+  Use values as in work by Au and Thompson~\cite{Au2013}.
+
+  \begin{itemize}
+    \item $N = 10$
+    \item $BW_T = 54^\circ$
+    \item $SLL_T = -24$ dB
+    \item $ensembles: 10^3$
+    \item $u=[0:5\pi]$
+    \item Error tolerance: 0.1
+  \end{itemize}
+
+  Sensitivity analysis of the firefly algorithm:
+
+  \begin{itemize}
+    \item $\gamma=\frac{1}{N}$
+    \item $\alpha=0.5\frac{1}{N}$
+  \end{itemize}
+
+  These values found to yield fast convergence rates with majority of fireflies resolving a high fitness.
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Linear Array Results}
+
+  \begin{figure}[H]
+  \centerline{\hbox{ \hspace{0.0in}
+      \includegraphics[height=3in,width=4in]{./plots/comparisonWPI.eps}
+    }
+  }
+  \caption {Distribution of Elements for Analytic and Firefly Results}\label{fig:comparisonWPI}
+  \end{figure}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Correlation}
+
+  Correlation matrix of inter-element spacings for $d_0:d_6$.
+
+  \begin{table}[H]\small
+    \begin{center}
+      %\begin{tabular}{|cccccccccc|}\hline
+      \begin{tabular}{|c|ccccccc|}\hline
+        & \textbf{$d_0$} & \textbf{$d_1$} & \textbf{$d_2$} & \textbf{$d_3$} & \textbf{$d_4$} & \textbf{$d_5$} & \textbf{$d_6$} \\ \hline
+        \textbf{$d_0$} & \textbf{1.00} & \textbf{-0.58} & -0.34 & 0.29 & 0.18 & -0.17 & -0.16  \\
+        \textbf{$d_1$} & \textbf{-0.58} & \textbf{1.00} & \textbf{-0.53} & 0.06 & 0.25 & -0.05 & -0.24 \\
+        \textbf{$d_2$} & -0.34 & \textbf{-0.53} & \textbf{1.00} & \textbf{-0.61} & -0.28 & 0.25 & 0.29 \\
+        \textbf{$d_3$} & 0.29 & 0.06 & \textbf{-0.61} & \textbf{1.00} & \textbf{-0.50} & -0.09 & 0.24 \\
+        \textbf{$d_4$} & 0.18 & 0.25 & -0.28 & \textbf{-0.50} & \textbf{1.00} & \textbf{-0.51} & -0.33 \\
+        \textbf{$d_5$} & -0.17 & -0.05 & 0.25 & -0.09 & \textbf{-0.51} & \textbf{1.00} & \textbf{-0.56} \\
+        \textbf{$d_6$} & -0.16 & -0.24 & 0.29 & 0.24 & -0.33 & \textbf{-0.56} & \textbf{1.00} \\ \hline
+
+      \end{tabular}
+      \label{table:corr1}
+    \end{center}
+  \end{table}
+
+  Correlation matrix of inter-element spacings for $d_6:d_9$.
+
+  \begin{table}[H]\small
+    \begin{center}
+      %\begin{tabular}{|cccccccccc|}\hline
+      \begin{tabular}{|c|cccc|}\hline
+        & \textbf{$d_6$} & \textbf{$d_7$} & \textbf{$d_8$} & \textbf{$d_9$} \\ \hline
+        \textbf{$d_6$} & \textbf{1.00} & \textbf{-0.91} & \textbf{0.67} & -0.42 \\
+        \textbf{$d_7$} & \textbf{-0.91} & \textbf{1.00} & \textbf{-0.88} & \textbf{0.64} \\
+        \textbf{$d_8$} & \textbf{0.67} & \textbf{-0.88} & \textbf{1.00} & \textbf{-0.88} \\
+        \textbf{$d_9$} &  -0.42 & \textbf{0.64} & \textbf{-0.88} & \textbf{1.00} \\ \hline
+      \end{tabular}
+      \label{table:corr2}
+    \end{center}
+  \end{table}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Paired Adjacent Spacings}
+
+  \begin{figure} 
+    \centerline{\hbox{ \hspace{0.0in}
+        \includegraphics[height=3in,width=4in]{./plots/scatteradj.eps}
+      }
+    }
+    \caption {Scatter Plot of Paired Adjacent Spacings $(d_i, d_{i+1})$}\label{fig:scatteradj}
+  \end{figure}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Paired Spacing with Summed Successive Pair}
+
+  \begin{figure} 
+    \centerline{\hbox{ \hspace{0.0in}
+        \includegraphics[height=3in,width=4in]{./plots/scatteradjsum.eps}
+      }
+    }
+    \caption {Summed Successive Pair $(d_i, d_{i+1}+d_{i+2})$}\label{fig:scatteradjsum}
+  \end{figure}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Regression Model}
+
+  Considering importance of the boundary of the aperture, synthesize array beginning with the last spacing, $d_9$.\\
+  \vspace{3mm}
+  Moving towards the origin, predict each spacing based on the sum of the previous two.\\
+  \vspace{3mm}
+  Fit the regression model to the firefly data set.
+  
+  \begin{eqnarray*}
+    \hat{d}_9 &\sim& f_{D_9}(d_9)\\
+    \hat{d}_8 & = & a_8 + b_8\hat{d}_9\\
+    \hat{d}_i & = & a_i + b_i\left(\hat{d}_{i+1}+\hat{d}_{i+2}\right), i=7,6,...,0
+  \end{eqnarray*}
+
+  $10^4$ random samples from $f_{D_9}(d_9)$.
+
+  $R^2$ values:
+  \begin{itemize}
+    \item $d_0:$ 0.67, $d_1:$ 0.31
+    \item $d_2:$ 0.77, $d_3:$ 0.41
+    \item $d_4:$ 0.72, $d_5:$ 0.47
+    \item $d_6:$ 0.70, $d_7:$ 0.87, $d_8:$ 0.78
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Performance}
+
+  \begin{figure}[H] 
+    \centerline{\hbox{ \hspace{0.0in}
+        \includegraphics[height=3in,width=4in]{./plots/costcdfnolegend.eps}
+      }
+    }
+    \caption {CDF of Cost of Arrays Generated via Model}\label{fig:costcdf}
+  \end{figure}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Performance (Cont'd)}
+
+  \begin{figure}[H] 
+    \centerline{\hbox{ \hspace{0.0in}
+        \includegraphics[height=3in,width=4in]{./plots/meanplusstd.eps}
+      }
+    }
+    \caption {$\mu$ and $\mu + \sigma$ of Firefly and Model Beam Forms}\label{fig:meanplusstd}
+  \end{figure}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Standard Deviation of Side Lobe Level}
+
+  \begin{figure}[H] 
+    \centerline{\hbox{ \hspace{0.0in}
+        \includegraphics[height=3in,width=4in]{./plots/comparison_std_allWPI.eps}
+      }
+    }
+    \caption {Standard Deviation for Analytical, Firefly, and Model Results}\label{fig:comparisonstdall}
+  \end{figure}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Planar Array Complexity}
+
+  The additional angular dimension introduces a second cosine to compute.\\
+  \vspace{3mm}
+  To maintain angular resolution, number of discrete angles to consider is squared.\\
+  \vspace{3mm}
+  Scaling is now $\mathcal{O}\left(N_{f\!f}^2 \cdot N + N_{f\!f} \cdot N \cdot N_u \cdot N_v\right)$.\\
+  \vspace{3mm}
+  \textbf{Infeasibly slow run-time.}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Parallel Implementation}
+
+  Consider the three different parallelization models\cite{Luong2013}.\\
+  \vspace{3mm}
+  Extremely expensive evaluation function - choose solution-level parallel model.\\
+  \vspace{3mm}
+  \begin{itemize}
+  \item Fine-grained parallel approach.
+  \item Concatenate firefly arrays.
+  \item Element positions are fine-grained dimension for memory coalescing.
+  \item CPU synchronization for all required synchs.
+  \item Data transfers only at initialization/finalization stages.
+  \item CUB library for parallel key-sort for unconstrained movement.
+  \item Online algorithm\cite{Knuth1998} for statistics, done in parallel and merged in finalization stage.
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Parallelization Performance}
+
+  \begin{center}
+    \begin{tabular}{| l | c c | r |}
+      \hline
+      Parameters & CPU (s) & GPU (s) & Speedup \\
+      \hline
+      $N_{ff}: 20$ & 2648.22 & 8.63 & 306x\\
+      $N: 100$ &&&\\
+      $ensembles: 10$ &&&\\
+      \hline
+      $ensemble: 1$ & 265.20 & 3.11 & 85x\\
+      \hline
+      $ensemble: 1$ & 1327.18 & 5.96 & 222x\\ 
+      $N_{ff}: 100$ &&&\\
+      \hline
+      $ensemble: 1$ & 1052.17 & 4.79 & 219x\\
+      $N: 400$ &&&\\
+      \hline
+      $N: 400$ & 10499.71 & 26.11 & 402x\\
+      \hline
+    \end{tabular}
+  \end{center}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Other Results}
+
+  \begin{itemize}
+    \item Verification of algorithm performance against analytically derived performance of uniformly distributed array.
+    \item Analytic ordered statistics using distribution from Au and Thompson (2013)\cite{Au2013}.
+    \item Data generation for a main beam steered to $\phi_d=\frac{5\pi}{8},\frac{6\pi}{8},\frac{7\pi}{8}$.
+    \item Sensitivity analysis of firefly results for $N=7,10,13$.
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Conclusion}
+
+  \begin{itemize}
+    \item The parallel firefly algorithm allowed generation of a large data set of $\underline{x}^*$.
+    \item Summed successive spacings posses a more linear relationship over paired spacings.
+    \item The data-driven probabilistic model demonstrated here showed good performance, with the variance approaching that of the firefly algorithm.
+    \item The parallel planar array implementation resulted in significant speedups and will allow generation of required data sets.
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Timeline}
+
+  \begin{itemize}
+    \item Explore robustness of probabilistic models for prediction. 2/10/17
+    \item Extend preliminary model to beam steering problem. 3/10/17
+      \begin{itemize}
+        \item Three different $u_d$.
+        \item Determine model specifications.
+      \end{itemize}
+    \item Design predictive model for broadside planar array. 4/14/17
+  \end{itemize}
+
+\end{frame}
+
+%\begin{frame}
+%  \frametitle{Results}
+%  \begin{figure}
+%    \begin{center}
+%      \includegraphics[width=0.5\textwidth,height=0.5\textwidth]{./pres_rts.png}
+%      \caption{Results for 15 cities with three inputs and two outputs}
+%    \end{center}
+%  \end{figure}
+%\end{frame}
+
+
+\begin{frame}[allowframebreaks]
+  \frametitle{Bibliography}
+  \bibliographystyle{spiebib}
+  \bibliography{../references.bib}
+\end{frame}
+
+\appendix
+
+\begin{frame}
+  \frametitle{Symmetric Planar Antenna Array Synthesis (Cont'd)}
+
+\begin{figure}
+  \centerline{\hbox{ \hspace{0.0in}
+      \includegraphics[height=3in,width=3in]{plots/2Darrayseg.eps}
+    }
+  }
+  \caption {Symmetric 2D Antenna Array with Bounded Elements} \label{fig:2Darrayseg}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Symmetric Planar Antenna Array Synthesis}
+
+\begin{figure}
+  \centerline{\hbox{ \hspace{0.0in}
+      \includegraphics[height=3in,width=3in]{plots/2Dgeometry.eps}
+    }
+  }
+  \caption {Symmetry and Geometry of 2D Planar Array} \label{fig:2Dgeometry}
+\end{figure}
+
+\end{frame}
+
+
+\end{document}
