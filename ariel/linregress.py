@@ -115,6 +115,23 @@ class LinearRegressionModel:
         firefly = np.cumsum(differences)
         return firefly
 
+    def generateAnyNew(self, separation, index, slopes, intercepts, slopesr, interceptsr):
+        differences = np.empty(self.N+1)
+        differences[index] = separation
+        for i in range (index, (self.N)):
+            differences[i+1] = (slopes[i] * differences[i]) + intercepts[i]
+        for i in range (0, index-1):
+            j = index-i
+            differences[j-1] = (differences[j] * slopesr[j-1]) +  interceptsr[j-1]
+
+        differencesr = np.flip(differences,0)
+        positionsr = 1 - np.cumsum(differencesr)
+        positions = np.flip(positionsr, 0)[1:]
+        # print differences
+        # print differencesr
+        # print positionsr
+        # print positions
+        return positions
 
     def randomMovement(self, x, stdev):
         if (np.random.rand(1) > 0.5):
@@ -144,7 +161,10 @@ class LinearRegressionModel:
 
         for i in range (0, self.SAMPLES):
             index = 9
-            fireflies[i] = self.randomMovements(self.generateLastElement(self.samplePercentileRange(tenth[index],ninetieth[index],1), slopes, intercepts), self.Stdev)
+            initials = self.samplePercentileRange(tenth[index],ninetieth[index],1)
+            initials = 0.95
+            generated = self.generateLastElement(initials, slopes, intercepts)
+            fireflies[i] = self.randomMovements(generated, self.Stdev)
 
         return fireflies
 
@@ -159,10 +179,11 @@ class LinearRegressionModel:
         fireflies = np.array([np.empty(self.N) for i in range (0,self.SAMPLES)])
 
         for i in range (0, self.SAMPLES):
-            index = np.random.randint(0,10)
-            index = 9
+            index = np.random.randint(0,10) + 1
+            # index = 7
             initials = self.samplePercentileRange(tenth[index],ninetieth[index],1)
-            generated = self.generateAny(initials, index, slopes, intercepts, slopesr, interceptsr)
+            # initials = 0.05
+            generated = self.generateAnyNew(initials, index, slopes, intercepts, slopesr, interceptsr)
             fireflies[i] = self.randomMovements(generated, self.Stdev)
 
         return fireflies
@@ -187,7 +208,7 @@ class LinearRegressionModel:
         if show==True:
             for i in range (0, 10):
                 x = fireflies[:,i]
-                count, bins = np.histogram(x, bins=50, density=True, range=[0,1])
+                count, bins = np.histogram(x, bins=50, density=True)
                 plt.plot(bins[:-1], count)
             plt.xlim([0,1])
             plt.title("Positions Generated from Linear Regression")
@@ -210,14 +231,14 @@ class LinearRegressionModel:
 
 
     def samples(self):
-        fits = np.empty(30)
-        stdev = np.empty(30)
-        for i in range (0,30):
-            r_, v_, fits[i] = self.analyze(self.generateFromLinRegressAny())
-            stdev[i] = self.Stdev
-            self.Stdev += 0.01
+        # fits = np.empty(30)
+        # stdev = np.empty(30)
+        # for i in range (0,30):
+        #     r_, v_, fits[i] = self.analyze(self.generateFromLinRegressAny())
+        #     stdev[i] = self.Stdev
+        #     self.Stdev += 0.01
 
-        plt.plot(stdev, fits, label="From Random Separation")
+        # plt.plot(stdev, fits, label="From Random Separation")
 
         self.Stdev = 0.0
         fits = np.empty(30)
@@ -227,34 +248,46 @@ class LinearRegressionModel:
             stdev[i] = self.Stdev
             self.Stdev += 0.01
 
-        for i in range (0,30):
-            r_, v_, fits[i] = self.analyze(self.generateFromLinRegressLast())
-            stdev[i] = self.Stdev
-            self.Stdev += 0.01
-
         plt.plot(stdev, fits, label="From Last Separation")
+
+
+        # self.Stdev = 0.0
+        # fits = np.empty(30)
+        # stdev = np.empty(30)
+        # for i in range (0,30):
+        #     fireflies = self.get_fireflies_positions
+        #     r_, v_, fits[i] = self.analyze(self.randomMovements(fireflies, self.tdev))
+        #     stdev[i] = self.Stdev
+        #     self.Stdev += 0.01
+
+        # plt.plot(stdev, fits, label="From Firefly")
 
 
         plt.xlabel('Standard Deviation')
         plt.ylabel('Average Fitness')
+        plt.title("Standard Deviation of Noise vs. Average Fitness")
         plt.legend()
         plt.show()
 
 
 if __name__ == '__main__':
-    model = LinearRegressionModel(sample_size=10000, stdev=0.0)
+    model = LinearRegressionModel(sample_size=1000, stdev=0.0)
+    # model.samples()
 
-    # rLast, vLast, fLast = model.analyze(model.generateFromLinRegressLast(), show=True)
+    # rLast, vLast, fLast = model.analyze(model.generateFromLinRegressLast(), show=False)
     rAny, vAny, fAny = model.analyze(model.generateFromLinRegressAny(), show=True)
-    rFirefly = model.get_fireflies_responses()
-    vFirefly = np.var(rFirefly, axis=0)
-    rFirefly = np.mean(rFirefly, axis=0)
-    rFirefly = functions.convertDb(rFirefly)
+    # print model.generateFromLinRegressLast()
+    # print model.generateFromLinRegressAny()
 
-    fig = plt.figure()
-    angleSpectrum = [(i*1.0/model.N_phi*180) for i in range (0, model.N_phi)]
+    # rFirefly = model.get_fireflies_responses()
+    # vFirefly = np.var(rFirefly, axis=0)
+    # rFirefly = np.mean(rFirefly, axis=0)
+    # rFirefly = functions.convertDb(rFirefly)
+
+    # fig = plt.figure()
+    # angleSpectrum = [(i*1.0/model.N_phi*180) for i in range (0, model.N_phi)]
     # plt.plot(angleSpectrum, rLast, label="From Last Position")
-    # plt.plot(angleSpectrum, rAny, label="From Random Spacing")
+    # # plt.plot(angleSpectrum, rAny, label="From Random Spacing")
     # plt.plot(angleSpectrum, rFirefly, label="Firefly")
     # plt.plot(angleSpectrum, model.response_model.getRt(), label="Desired")
     # plt.title("Mean Response Generated from\nLinear Regression for Antenna Element Positions")
@@ -264,13 +297,13 @@ if __name__ == '__main__':
     # plt.ylim([-65,5])
     # plt.show()
     # print vFirefly
-    plt.plot(angleSpectrum, vLast, label="From Last Position")
-    plt.plot(angleSpectrum, vAny, label="From Random Spacing")
-    plt.plot(angleSpectrum, vFirefly, label="Firefly")
-    # plt.plot(angleSpectrum, model.response_model.getRt(), label="Desired")
-    plt.title("Variance of Response Generated from\nLinear Regression for Antenna Element Positions")
-    plt.legend()
-    plt.ylabel("Variance")
-    plt.xlabel("Angle (degrees)")
-    # plt.ylim([-65,5])
-    plt.show()
+    # plt.plot(angleSpectrum, vLast, label="From Last Position")
+    # # plt.plot(angleSpectrum, vAny, label="From Random Sppacing")
+    # plt.plot(angleSpectrum, vFirefly, label="Firefly")
+    # # plt.plot(angleSpectrum, model.response_model.getRt(), label="Desired")
+    # plt.title("Variance of Response Generated from\nLinear Regression for Antenna Element Positions")
+    # plt.legend()
+    # plt.ylabel("Variance")
+    # plt.xlabel("Angle (degrees)")
+    # # plt.ylim([-65,5])
+    # plt.show()
